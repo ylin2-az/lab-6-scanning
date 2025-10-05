@@ -1,0 +1,92 @@
+name: CI
+
+on: [push]
+
+jobs:
+  sast_scan:
+    name: Run Static Code Scan
+    runs-on: ubuntu-latest
+   # strategy:
+   #   matrix:
+   #    python-version: ["3.8", "3.9", "3.10"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+      
+   # - uses: actions/checkout@v4
+  #  - name: Set up Python ${{ matrix.python-version }}
+   #   uses: actions/setup-python@v3
+  #    with:
+   #     python-version: ${{ matrix.python-version }}
+  #  - name: Install dependencies
+  #    run: |
+  #      python -m pip install --upgrade pip
+  #     pip install pylint
+  #  - name: Analysing the code with pylint
+  #   run: |
+  #   pylint $(git ls-files '*.py')
+       
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.28.0
+      env:
+        TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL'
+
+    - name: Upload scan results
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-results
+        path: trivy-results.sarif
+
+  image_scan:
+    name: Run image scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Fix Debian repos and install dependencies
+        run: |
+          echo "Applying Debian archive fix directly in GitHub Action..."
+          sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list
+          sed -i '/security.debian.org/d' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y dnsutils libpq-dev python3-dev
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+    
+      - name: Build Docker Image
+        run: docker build -f Dockerfile -t pygoat_app:latest .
+
+      - name: Docker Scout Scan
+        uses: docker/scout-action@v1.15.0
+        with:
+          dockerhub-user: ${{ secrets.REPO_USER }}
+          dockerhub-password: ${{ secrets.REPO_PWD }}
+          command: quickview,cves
+          only-severities: critical,high
+          sarif-file: scout-report.sarif
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-scout-findings
+          path: scout-report.sarif
