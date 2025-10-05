@@ -62,16 +62,6 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
-      - name: Fix Debian repos and install dependencies
-        run: |
-          echo "Applying Debian archive fix directly in GitHub Action..."
-          sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list
-          sed -i '/security.debian.org/d' /etc/apt/sources.list
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y dnsutils libpq-dev python3-dev
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-    
       - name: Build Docker Image
         run: docker build -f Dockerfile -t pygoat_app:latest .
 
