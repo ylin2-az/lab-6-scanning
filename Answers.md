@@ -16,6 +16,7 @@ This vulnerability has been fixed with verion 10.2.0. Simply updating the packag
 ### Vulnerability 2:
 1. Which vulnerability are you addressing?
 PyYAML 5.1 through 5.1.2 insufficient restrictions on untrusted YAML files through full_load method causing remote code execution.
+
 2. Which CVE is linked to this vulnerability?
 CVE-2019-20477, this is another code execution vulnerability, but through different method.
 
