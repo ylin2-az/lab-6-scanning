@@ -4,7 +4,7 @@ Add your answers to the questions in Part 3, Step 2 below.
 
 ## Vulernability Remediation:
 ### Vulnerability 1: 
-1. Which package or library are you addressing?
+1. Which package or library are you 
 Pillow version 10.1.0 PIL.ImageMath.eval arbitrary code execution.
 
 3. Which CVE is linked to this vulnerability?
